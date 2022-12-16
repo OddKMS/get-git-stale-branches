@@ -15,8 +15,6 @@ else
     exit 1;
 fi
 
-echo $gitFolder
-
 for branch in \
     `git -C $gitFolder branch -r --merged`; \
 do \
