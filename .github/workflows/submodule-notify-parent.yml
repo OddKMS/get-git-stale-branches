@@ -1,0 +1,36 @@
+name: 'Submodule Notify Parent'
+
+on:
+  push:
+    branches:
+      - main    
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  notify:
+    name: 'Submodule Notify Parent'
+    runs-on: ubuntu-latest
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - name: Set PARENT_REPO
+      run: |
+        echo 'PARENT_REPO=oddkms/oddkms-scripts' >> $GITHUB_ENV
+        
+    - name: Set WORKFLOW_ID
+      run: |
+        echo 'WORKFLOW_ID<<EOF' >> $GITHUB_ENV
+        curl -X GET -H 'Authorization: token ${{ secrets.SUBMODULES_SYNC_TOKEN }}' https://api.github.com/repos/${{env.PARENT_REPO}}/actions/workflows | jq '.workflows [0].id' >> $GITHUB_ENV
+        echo 'EOF' >> $GITHUB_ENV
+        
+    - name: Github REST API Call
+      env:
+        PARENT_BRANCH: main
+      run: |
+        curl -fL --retry 3 -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token ${{ secrets.SUBMODULES_SYNC_TOKEN }}" https://api.github.com/repos/${{ env.PARENT_REPO }}/actions/workflows/${{ env.WORKFLOW_ID }}/dispatches -d '{"ref":"${{ env.PARENT_BRANCH }}"}'
